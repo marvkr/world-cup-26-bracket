@@ -14,7 +14,7 @@ import {
   useViewport,
 } from "@xyflow/react";
 
-import { CloseIcon, ExpandIcon, MinusIcon, PlusIcon } from "@/components/icons";
+import { CloseIcon, ExpandIcon, HandIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { FlipBoard } from "@/components/ui/flip-board";
 import { WorldCupTrophyThree } from "@/components/world-cup-trophy-three";
@@ -389,27 +389,23 @@ function PendingFlowNode({ id, data }: NodeProps<PendingNode>) {
 function TrophyFlowNode() {
   const { zoom } = useViewport();
   const [showHint, setShowHint] = React.useState(true);
-  const inverseZoom = Math.min(2.75, Math.max(0.75, 1 / zoom));
+  const hintInverseZoom = Math.min(2.75, Math.max(0.75, 1 / zoom));
   return (
     <div className="relative flex size-48 items-center justify-center">
       <Handle id="left" type="target" position={Position.Left} className="pointer-events-none opacity-0" />
       <Handle id="right" type="target" position={Position.Right} className="pointer-events-none opacity-0" />
       <div className="relative size-44">
         <WorldCupTrophyThree className="size-full" onInteract={() => setShowHint(false)} />
-        <img
-          src={WORLD_CUP_26_EMBLEM}
-          alt="FIFA World Cup 26 official emblem"
-          className="absolute bottom-0 left-1/2 size-7 -translate-x-1/2 rounded-[2px] border border-border bg-black object-cover shadow-md"
-        />
         {showHint && (
           <p
-            className="pointer-events-none absolute left-1/2 top-full mt-3 whitespace-nowrap text-[11px] font-medium text-muted-foreground"
+            className="pointer-events-none absolute left-1/2 top-full mt-2 flex items-center gap-1 whitespace-nowrap font-[family-name:var(--font-caveat)] text-[9px] font-medium leading-none text-muted-foreground"
             style={{
-              transform: `translateX(-50%) scale(${inverseZoom})`,
+              transform: `translateX(-50%) scale(${hintInverseZoom})`,
               transformOrigin: "top center",
             }}
           >
-            Drag trophy to rotate
+            <HandIcon className="size-2 shrink-0" aria-hidden="true" />
+            Rotate trophy
           </p>
         )}
       </div>

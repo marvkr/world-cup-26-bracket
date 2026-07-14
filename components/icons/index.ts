@@ -10,3 +10,4 @@ export { CloseIcon } from "./close";
 export { SearchIcon } from "./search";
 export { GlobeIcon } from "./globe";
 export { ExpandIcon } from "./expand";
+export { HandIcon } from "./hand";

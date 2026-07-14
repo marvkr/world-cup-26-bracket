@@ -1,0 +1,299 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.14 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.2 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.22 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.87 0.17 95);
+  --primary-foreground: oklch(0.14 0 0);
+  --secondary: oklch(0.24 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.64 0 0);
+  --accent: oklch(0.26 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.62 0.25 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(0.17 0 0);
+  --ring: oklch(0.87 0.17 95);
+  --radius: 0.1875rem;
+  --tv-cyan: oklch(0.78 0.16 220);
+  --tv-teal: oklch(0.88 0.15 175);
+  --tv-magenta: oklch(0.57 0.27 305);
+  --tv-red: oklch(0.62 0.25 25);
+  --tv-amber: oklch(0.87 0.17 95);
+  --tv-green: oklch(0.86 0.24 145);
+  --shadow-xs: inset 0 1px 0 rgba(255, 255, 255, 0.02), 0 1px 1px rgba(0, 0, 0, 0.5);
+  --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 4px rgba(0, 0, 0, 0.55);
+  --shadow-lg: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 8px rgba(0, 0, 0, 0.6);
+  --shadow-xl: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 16px rgba(0, 0, 0, 0.65);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.02);
+  --shadow-primary: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(255, 204, 0, 0.28), 0 2px 4px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(255, 204, 0, 0.22);
+  --shadow-button: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.55);
+  --shadow-button-hover: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 4px rgba(0, 0, 0, 0.6);
+  --chart-1: var(--primary);
+  --chart-2: oklch(from var(--primary) calc(l - 0.09) calc(c * 0.92) h);
+  --chart-3: oklch(from var(--primary) calc(l - 0.18) calc(c * 0.84) h);
+  --chart-4: oklch(from var(--primary) calc(l - 0.27) calc(c * 0.76) h);
+  --chart-5: oklch(from var(--primary) calc(l - 0.36) calc(c * 0.68) h);
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --chart-1: var(--chart-1);
+  --shadow-button-hover: var(--shadow-button-hover);
+  --shadow-button: var(--shadow-button);
+  --shadow-primary: var(--shadow-primary);
+  --shadow-inset: var(--shadow-inset);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-md: var(--shadow-md);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-xs: var(--shadow-xs);
+  --color-tv-green: var(--tv-green);
+  --color-tv-amber: var(--tv-amber);
+  --color-tv-red: var(--tv-red);
+  --color-tv-magenta: var(--tv-magenta);
+  --color-tv-teal: var(--tv-teal);
+  --color-tv-cyan: var(--tv-cyan);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-width: 320px;
+  }
+
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Let textareas grow with their content instead of nested scrolling:
+     smoother writing, easier-to-scan forms. */
+  textarea {
+    /* Fallback for browsers without field-sizing (e.g. Firefox): keep the
+       textarea user-resizable so it can still be grown manually. */
+    resize: vertical;
+  }
+  @supports (field-sizing: content) {
+    textarea {
+      field-sizing: content;
+      max-height: 20lh;
+      overflow-y: auto;
+    }
+  }
+}
+
+@layer components {
+  .bracket-edge-active .react-flow__edge-path {
+    stroke-dasharray: 8 6;
+    animation: bracket-route 700ms linear infinite;
+    will-change: stroke-dashoffset;
+  }
+
+  @keyframes bracket-route {
+    to {
+      stroke-dashoffset: -14;
+    }
+  }
+
+  .bracket-scroll {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    border-block: 1px solid var(--border);
+    scrollbar-color: var(--primary) var(--card);
+  }
+
+  .radial-scroll {
+    overscroll-behavior: contain;
+    scrollbar-color: var(--primary) var(--card);
+    scrollbar-gutter: stable both-edges;
+    touch-action: none;
+  }
+
+  .radial-scroll .react-flow__pane {
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .radial-scroll .react-flow__pane:active {
+    cursor: grabbing;
+  }
+
+  .radial-scroll .react-flow__node:hover,
+  .radial-scroll .react-flow__node:has([aria-describedby]:focus-visible) {
+    z-index: 50 !important;
+  }
+
+  .radial-scroll .react-flow__node:has([aria-describedby]:focus-visible) [role="tooltip"] {
+    opacity: 1;
+    transition-delay: 500ms;
+    transition-duration: 150ms;
+    transition-property: opacity;
+  }
+
+  .radial-scroll:focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring) 65%, transparent);
+  }
+
+  .bracket-scroll:focus-visible {
+    outline: 2px solid color-mix(in oklch, var(--ring) 60%, transparent);
+    outline-offset: 3px;
+  }
+
+  .bracket-heading {
+    position: absolute;
+    top: 18px;
+    z-index: 1;
+    display: flex;
+    width: 300px;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .bracket-heading span {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted-foreground);
+  }
+
+  .bracket-line {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 5;
+    transition: stroke 180ms ease, stroke-width 180ms ease;
+  }
+
+  .bracket-line-active {
+    stroke: var(--primary);
+    stroke-width: 2;
+    stroke-dasharray: none;
+    filter: drop-shadow(0 0 4px color-mix(in oklch, var(--primary) 45%, transparent));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .bracket-edge-active .react-flow__edge-path {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (max-width: 639px) {
+  html {
+    scrollbar-gutter: auto;
+  }
+}
+
+.dark {
+  --background: oklch(0.14 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.2 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.22 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.87 0.17 95);
+  --primary-foreground: oklch(0.14 0 0);
+  --secondary: oklch(0.24 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.64 0 0);
+  --accent: oklch(0.26 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.62 0.25 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(0.17 0 0);
+  --ring: oklch(0.87 0.17 95);
+  --radius: 0.1875rem;
+  --tv-cyan: oklch(0.78 0.16 220);
+  --tv-teal: oklch(0.88 0.15 175);
+  --tv-magenta: oklch(0.57 0.27 305);
+  --tv-red: oklch(0.62 0.25 25);
+  --tv-amber: oklch(0.87 0.17 95);
+  --tv-green: oklch(0.86 0.24 145);
+  --shadow-xs: inset 0 1px 0 rgba(255, 255, 255, 0.02), 0 1px 1px rgba(0, 0, 0, 0.5);
+  --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 4px rgba(0, 0, 0, 0.55);
+  --shadow-lg: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 8px rgba(0, 0, 0, 0.6);
+  --shadow-xl: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 16px rgba(0, 0, 0, 0.65);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.02);
+  --shadow-primary: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(255, 204, 0, 0.28), 0 2px 4px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(255, 204, 0, 0.22);
+  --shadow-button: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.55);
+  --shadow-button-hover: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 4px rgba(0, 0, 0, 0.6);
+  --chart-1: var(--primary);
+  --chart-2: oklch(from var(--primary) calc(l - 0.09) calc(c * 0.92) h);
+  --chart-3: oklch(from var(--primary) calc(l - 0.18) calc(c * 0.84) h);
+  --chart-4: oklch(from var(--primary) calc(l - 0.27) calc(c * 0.76) h);
+  --chart-5: oklch(from var(--primary) calc(l - 0.36) calc(c * 0.68) h);
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

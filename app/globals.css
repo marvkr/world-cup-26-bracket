@@ -178,7 +178,8 @@
   }
 
   .radial-scroll .react-flow__node:hover,
-  .radial-scroll .react-flow__node:has([aria-describedby]:focus-visible) {
+  .radial-scroll .react-flow__node:has([aria-describedby]:focus-visible),
+  .radial-scroll .react-flow__node:has([data-touch-tooltip-open="true"]) {
     z-index: 50 !important;
   }
 

@@ -14,7 +14,7 @@ import {
   useViewport,
 } from "@xyflow/react";
 
-import { MinusIcon, PlusIcon, TrophyIcon } from "@/components/icons";
+import { CloseIcon, ExpandIcon, MinusIcon, PlusIcon, TrophyIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { FlipBoard } from "@/components/ui/flip-board";
 import { WorldCupTrophyThree } from "@/components/world-cup-trophy-three";
@@ -217,14 +217,21 @@ type TreeEdgeData = Record<string, unknown> & {
   targetCircle: CircleGeometry;
 };
 
+const TooltipInteractionContext = React.createContext<{
+  activeId: string | null;
+  showOnTouch: (id: string) => void;
+}>({ activeId: null, showOnTouch: () => undefined });
+
 function MatchTooltip({
   match: item,
   id,
   placement = "above",
+  open = false,
 }: {
   match: Match;
   id: string;
   placement?: "above" | "below";
+  open?: boolean;
 }) {
   const { zoom } = useViewport();
   const [first, second] = item.teams;
@@ -246,11 +253,13 @@ function MatchTooltip({
       role="tooltip"
       className={cn(
         "pointer-events-none absolute left-1/2 z-50 w-72 overflow-hidden rounded-lg border border-white/10 bg-card text-card-foreground opacity-0 shadow-2xl transition-none group-hover/node:opacity-100 group-hover/node:transition-opacity group-hover/node:delay-500 group-hover/node:duration-150",
+        open && "opacity-100 transition-opacity duration-150",
         placement === "above" ? "bottom-full mb-3" : "top-full mt-3",
       )}
       style={{
         transform: `translateX(-50%) scale(${inverseZoom})`,
         transformOrigin: placement === "above" ? "bottom center" : "top center",
+        opacity: open ? 1 : undefined,
       }}
     >
       <div className="relative h-28 overflow-hidden bg-muted">
@@ -295,11 +304,16 @@ function MatchTooltip({
 }
 
 function TeamFlowNode({ id, data }: NodeProps<TeamNode>) {
+  const tooltipInteraction = React.useContext(TooltipInteractionContext);
   const selected = data.team.code === data.selectedTeam;
   const muted = data.eliminated && !selected;
   const size = data.outer ? 56 : 44;
   return (
-    <div className="group/node relative" style={{ width: size, height: size }}>
+    <div
+      className="group/node relative"
+      data-touch-tooltip-open={tooltipInteraction.activeId === id ? "true" : undefined}
+      style={{ width: size, height: size }}
+    >
       <Handle type="target" position={data.targetPosition} className="pointer-events-none opacity-0" />
       <button
         type="button"
@@ -310,6 +324,9 @@ function TeamFlowNode({ id, data }: NodeProps<TeamNode>) {
           selected && "border-primary [box-shadow:var(--shadow-primary)]",
         )}
         onClick={() => data.onSelect(data.team.code)}
+        onPointerUp={(event) => {
+          if (event.pointerType !== "mouse" && data.match) tooltipInteraction.showOnTouch(id);
+        }}
         aria-label={`Trace ${data.team.name}${data.eliminated ? ", eliminated" : ""}`}
         aria-describedby={data.match ? `match-${id}` : undefined}
         aria-pressed={selected}
@@ -335,6 +352,7 @@ function TeamFlowNode({ id, data }: NodeProps<TeamNode>) {
           match={data.match}
           id={`match-${id}`}
           placement={data.tooltipPlacement}
+          open={tooltipInteraction.activeId === id}
         />
       )}
       <Handle type="source" position={data.sourcePosition} className="pointer-events-none opacity-0" />
@@ -342,11 +360,16 @@ function TeamFlowNode({ id, data }: NodeProps<TeamNode>) {
   );
 }
 
-function PendingFlowNode({ data }: NodeProps<PendingNode>) {
+function PendingFlowNode({ id, data }: NodeProps<PendingNode>) {
+  const tooltipInteraction = React.useContext(TooltipInteractionContext);
   return (
     <div
       className="group/node relative flex size-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      data-touch-tooltip-open={tooltipInteraction.activeId === id ? "true" : undefined}
       tabIndex={0}
+      onPointerUp={(event) => {
+        if (event.pointerType !== "mouse") tooltipInteraction.showOnTouch(id);
+      }}
       aria-label={`${data.match.teams[0]?.name} versus ${data.match.teams[1]?.name}, ${data.match.status}`}
       aria-describedby={`match-${data.match.id}`}
     >
@@ -356,6 +379,7 @@ function PendingFlowNode({ data }: NodeProps<PendingNode>) {
         match={data.match}
         id={`match-${data.match.id}`}
         placement={data.tooltipPlacement}
+        open={tooltipInteraction.activeId === id}
       />
       <Handle type="source" position={data.sourcePosition} className="pointer-events-none opacity-0" />
     </div>
@@ -363,17 +387,31 @@ function PendingFlowNode({ data }: NodeProps<PendingNode>) {
 }
 
 function TrophyFlowNode() {
+  const { zoom } = useViewport();
+  const [showHint, setShowHint] = React.useState(true);
+  const inverseZoom = Math.min(2.75, Math.max(0.75, 1 / zoom));
   return (
     <div className="relative flex size-48 items-center justify-center">
       <Handle id="left" type="target" position={Position.Left} className="pointer-events-none opacity-0" />
       <Handle id="right" type="target" position={Position.Right} className="pointer-events-none opacity-0" />
       <div className="relative size-44">
-        <WorldCupTrophyThree className="size-full" />
+        <WorldCupTrophyThree className="size-full" onInteract={() => setShowHint(false)} />
         <img
           src={WORLD_CUP_26_EMBLEM}
           alt="FIFA World Cup 26 official emblem"
           className="absolute bottom-0 left-1/2 size-7 -translate-x-1/2 rounded-[2px] border border-border bg-black object-cover shadow-md"
         />
+        {showHint && (
+          <p
+            className="pointer-events-none absolute left-1/2 top-full mt-3 whitespace-nowrap text-[11px] font-medium text-muted-foreground"
+            style={{
+              transform: `translateX(-50%) scale(${inverseZoom})`,
+              transformOrigin: "top center",
+            }}
+          >
+            Drag trophy to rotate
+          </p>
+        )}
       </div>
     </div>
   );
@@ -531,6 +569,17 @@ function RadialBracket({
 }) {
   const frameRef = React.useRef<HTMLDivElement>(null);
   const flowRef = React.useRef<ReactFlowInstance<TeamNode | PendingNode | TrophyNode, Edge<TreeEdgeData>> | null>(null);
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const [touchTooltipId, setTouchTooltipId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isFullscreen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsFullscreen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isFullscreen]);
 
   React.useEffect(() => {
     const frame = frameRef.current;
@@ -632,12 +681,23 @@ function RadialBracket({
     }));
   }, [nodes, selectedTeam]);
 
+  const clearCanvasState = React.useCallback(() => {
+    setTouchTooltipId(null);
+    onClear();
+  }, [onClear]);
+
   return (
-    <div
-      ref={frameRef}
-      className="radial-scroll size-full overflow-hidden"
-      aria-label="Complete World Cup knockout bracket. Click empty canvas to clear the selected route."
-    >
+    <TooltipInteractionContext.Provider value={{ activeId: touchTooltipId, showOnTouch: setTouchTooltipId }}>
+      <div
+        ref={frameRef}
+        role="region"
+        data-fullscreen={isFullscreen ? "true" : undefined}
+        className={cn(
+          "radial-scroll size-full overflow-hidden bg-background",
+          isFullscreen && "fixed inset-0 z-50",
+        )}
+        aria-label="Complete World Cup knockout bracket. Click empty canvas to clear the selected route."
+      >
       <div className="relative size-full">
         <ReactFlow
           className="relative z-10"
@@ -662,8 +722,10 @@ function RadialBracket({
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={false}
-          onNodeClick={() => undefined}
-          onPaneClick={onClear}
+          onNodeClick={(_, node) => {
+            if (node.type === "trophy") setTouchTooltipId(null);
+          }}
+          onPaneClick={clearCanvasState}
           proOptions={{ hideAttribution: true }}
         />
         <div className="absolute bottom-3 right-3 z-20 flex gap-2">
@@ -671,7 +733,27 @@ function RadialBracket({
             variant="secondary"
             size="icon"
             className="size-11 p-0"
-            onClick={() => flowRef.current?.zoomIn({ duration: 180 })}
+            onClick={() => {
+              setTouchTooltipId(null);
+              setIsFullscreen((value) => !value);
+            }}
+            aria-label={isFullscreen ? "Exit graph fullscreen" : "View graph fullscreen"}
+            aria-pressed={isFullscreen}
+          >
+            {isFullscreen ? (
+              <CloseIcon className="relative z-10 size-5" aria-hidden="true" />
+            ) : (
+              <ExpandIcon className="relative z-10 size-5" aria-hidden="true" />
+            )}
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="size-11 p-0"
+            onClick={() => {
+              setTouchTooltipId(null);
+              flowRef.current?.zoomIn({ duration: 180 });
+            }}
             aria-label="Zoom in"
           >
             <PlusIcon className="relative z-10 size-5" aria-hidden="true" />
@@ -680,7 +762,10 @@ function RadialBracket({
             variant="secondary"
             size="icon"
             className="size-11 p-0"
-            onClick={() => flowRef.current?.zoomOut({ duration: 180 })}
+            onClick={() => {
+              setTouchTooltipId(null);
+              flowRef.current?.zoomOut({ duration: 180 });
+            }}
             aria-label="Zoom out"
           >
             <MinusIcon className="relative z-10 size-5" aria-hidden="true" />
@@ -695,7 +780,8 @@ function RadialBracket({
           Trophy by waimus · CC BY-SA
         </a>
       </div>
-    </div>
+      </div>
+    </TooltipInteractionContext.Provider>
   );
 }
 

@@ -9,3 +9,4 @@ export { MenuIcon } from "./menu";
 export { CloseIcon } from "./close";
 export { SearchIcon } from "./search";
 export { GlobeIcon } from "./globe";
+export { ExpandIcon } from "./expand";

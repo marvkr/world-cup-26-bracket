@@ -6,8 +6,13 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import { cn } from "@/lib/utils";
 
-export function WorldCupTrophyThree({ className }: { className?: string }) {
+export function WorldCupTrophyThree({ className, onInteract }: { className?: string; onInteract?: () => void }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
+  const onInteractRef = React.useRef(onInteract);
+
+  React.useEffect(() => {
+    onInteractRef.current = onInteract;
+  }, [onInteract]);
 
   React.useEffect(() => {
     const host = hostRef.current;
@@ -116,14 +121,15 @@ export function WorldCupTrophyThree({ className }: { className?: string }) {
     };
 
     const handlePointerDown = (event: PointerEvent) => {
+      event.preventDefault();
       event.stopPropagation();
+      onInteractRef.current?.();
       dragging = true;
       pointerId = event.pointerId;
       previousPointerX = event.clientX;
       previousPointerY = event.clientY;
       host.setPointerCapture(pointerId);
       host.dataset.dragging = "true";
-      host.focus({ preventScroll: true });
     };
     const handlePointerMove = (event: PointerEvent) => {
       if (!dragging || event.pointerId !== pointerId) return;
@@ -154,6 +160,7 @@ export function WorldCupTrophyThree({ className }: { className?: string }) {
         pitch = -0.04;
         yaw = 0;
       } else return;
+      onInteractRef.current?.();
       event.preventDefault();
       event.stopPropagation();
       renderScene();

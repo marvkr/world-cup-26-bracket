@@ -2,6 +2,6 @@
   "library": "pixelarticons",
   "prefix": "pixelarticons",
   "source": "iconify",
-  "installedAt": "2026-07-14T18:11:08.259Z",
-  "icons": ["calendar", "chevron-left", "chevron-right", "close", "flag", "globe", "menu", "minus", "plus", "search", "trophy"]
+  "installedAt": "2026-07-14T20:44:10.148Z",
+  "icons": ["calendar", "chevron-left", "chevron-right", "close", "expand", "flag", "globe", "menu", "minus", "plus", "search", "trophy"]
 }

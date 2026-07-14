@@ -1,4 +1,4 @@
-# World Cup 26 bracket
+# FIFA World Cup 26 bracket
 
 An interactive radial World Cup bracket built with Next.js, React Flow, and Three.js.
 

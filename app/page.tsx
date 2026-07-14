@@ -14,7 +14,7 @@ import {
   useViewport,
 } from "@xyflow/react";
 
-import { CloseIcon, ExpandIcon, MinusIcon, PlusIcon, TrophyIcon } from "@/components/icons";
+import { CloseIcon, ExpandIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { FlipBoard } from "@/components/ui/flip-board";
 import { WorldCupTrophyThree } from "@/components/world-cup-trophy-three";
@@ -789,14 +789,16 @@ export default function Page() {
   const [selectedTeam, setSelectedTeam] = React.useState<string | null>(null);
 
   return (
-    <main className="flex h-svh flex-col overflow-hidden bg-background">
-      <header className="shrink-0 border-b border-border">
+    <main className="isolate flex h-svh flex-col overflow-hidden bg-background">
+      <header className="relative z-30 shrink-0 border-b border-border bg-background">
         <div className="mx-auto flex max-w-[1540px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-[3px] bg-primary text-primary-foreground [box-shadow:var(--shadow-primary)]">
-              <TrophyIcon className="size-5" />
-            </div>
-            <p className="text-sm font-semibold">World Cup 26</p>
+            <img
+              src={WORLD_CUP_26_EMBLEM}
+              alt=""
+              className="size-9 rounded-[3px] border border-border bg-black object-cover shadow-md"
+            />
+            <p className="text-sm font-semibold">FIFA World Cup 26</p>
           </div>
           <Button variant="primary" size="sm" asChild>
             <a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/knockout-stage-match-schedule-bracket" target="_blank" rel="noreferrer">Match centre</a>
@@ -805,7 +807,7 @@ export default function Page() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col pt-6 sm:px-6 sm:pt-8 lg:px-8">
-        <section className="grid gap-8 border-b border-border px-4 pb-10 sm:px-0 lg:grid-cols-[1fr_420px] lg:items-center">
+        <section className="relative z-20 grid shrink-0 gap-8 border-b border-border bg-background px-4 pb-10 sm:px-0 lg:grid-cols-[1fr_420px] lg:items-center">
           <h1 className="max-w-3xl text-4xl font-semibold leading-[1.05] tracking-[-0.035em] text-balance sm:text-6xl">Road to the final</h1>
           <div className="flex justify-start lg:justify-end" role="img" aria-label="France versus Spain, today at 12:00 Pacific Time in Dallas">
             <div className="sm:hidden" aria-hidden="true">
@@ -817,7 +819,7 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="min-h-0 flex-1 pt-6 sm:pt-8">
+        <section className="relative z-0 min-h-0 flex-1 overflow-hidden bg-background pt-6 sm:pt-8">
           <RadialBracket selectedTeam={selectedTeam} onSelect={setSelectedTeam} onClear={() => setSelectedTeam(null)} />
         </section>
       </div>

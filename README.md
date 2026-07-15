@@ -2,6 +2,12 @@
 
 An interactive radial World Cup bracket built with Next.js, React Flow, and Three.js.
 
+[![FIFA World Cup 26 radial bracket](./public/og-world-cup-bracket.png)](https://world-cup-26-bracket-gamma.vercel.app/)
+
+Designed and built with the [Better Design MCP](https://better-design.com), which gives coding agents access to design systems, UI principles, and UX guidance.
+
+[View the live app](https://world-cup-26-bracket-gamma.vercel.app/)
+
 ## Run locally
 
 ```bash

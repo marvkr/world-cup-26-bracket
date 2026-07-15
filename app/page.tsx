@@ -966,7 +966,7 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="relative z-0 min-h-0 flex-1 overflow-hidden bg-background pt-6 sm:pt-8">
+        <section className="relative min-h-0 flex-1 overflow-hidden bg-background pt-6 sm:pt-8">
           <RadialBracket matches={matches} selectedTeam={selectedTeam} onSelect={setSelectedTeam} onClear={() => setSelectedTeam(null)} />
         </section>
       </div>

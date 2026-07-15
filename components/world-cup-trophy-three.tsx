@@ -83,7 +83,6 @@ export function WorldCupTrophyThree({
     const trophy = new THREE.Group();
     let pitch = -0.04;
     let yaw = 0;
-    trophy.position.x = -0.18;
     trophy.rotation.x = pitch;
     scene.add(trophy);
 

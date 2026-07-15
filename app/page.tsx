@@ -273,6 +273,8 @@ function useLiveFeed() {
 }
 const CANVAS_SIZE = 1400;
 const CENTER = CANVAS_SIZE / 2;
+const TROPHY_NODE_SIZE = 192;
+const FIT_VIEW_PADDING = 0.065;
 
 type TeamNode = Node<{
   team: Team;
@@ -590,7 +592,7 @@ function circleForNode(node: TeamNode | PendingNode | TrophyNode): CircleGeometr
   if (node.type === "pending") {
     return { x: node.position.x + 22, y: node.position.y + 22, radius: 3 };
   }
-  const diameter = node.type === "team" ? (node.data.outer ? 56 : 44) : 160;
+  const diameter = node.type === "team" ? (node.data.outer ? 56 : 44) : TROPHY_NODE_SIZE;
   return {
     x: node.position.x + diameter / 2,
     y: node.position.y + diameter / 2,
@@ -679,7 +681,7 @@ function RadialBracket({
   React.useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
-    const fit = () => flowRef.current?.fitView({ padding: 0.04, minZoom: 0.1, maxZoom: 1 });
+    const fit = () => flowRef.current?.fitView({ padding: FIT_VIEW_PADDING, minZoom: 0.1, maxZoom: 1 });
     const observer = new ResizeObserver(() => requestAnimationFrame(fit));
     observer.observe(frame);
     return () => observer.disconnect();
@@ -756,7 +758,7 @@ function RadialBracket({
     const trophy: TrophyNode = {
       id: "trophy",
       type: "trophy",
-      position: { x: CENTER - 80, y: CENTER - 80 },
+      position: { x: CENTER - TROPHY_NODE_SIZE / 2, y: CENTER - TROPHY_NODE_SIZE / 2 },
       data: { kind: "trophy" },
       draggable: false,
       selectable: false,
@@ -814,10 +816,10 @@ function RadialBracket({
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
-          fitViewOptions={{ padding: 0.04, minZoom: 0.1, maxZoom: 1 }}
+          fitViewOptions={{ padding: FIT_VIEW_PADDING, minZoom: 0.1, maxZoom: 1 }}
           onInit={(instance) => {
             flowRef.current = instance;
-            requestAnimationFrame(() => instance.fitView({ padding: 0.04, minZoom: 0.1, maxZoom: 1 }));
+            requestAnimationFrame(() => instance.fitView({ padding: FIT_VIEW_PADDING, minZoom: 0.1, maxZoom: 1 }));
           }}
           panOnDrag
           panOnScroll={false}

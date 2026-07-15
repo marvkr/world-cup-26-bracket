@@ -4,17 +4,52 @@ import * as React from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+import { TrophyIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
-export function WorldCupTrophyThree({ className, onInteract }: { className?: string; onInteract?: () => void }) {
+type WebGLState = "checking" | "ready" | "fallback";
+
+function canCreateWebGLContext() {
+  try {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    context?.getExtension("WEBGL_lose_context")?.loseContext();
+    return Boolean(context);
+  } catch {
+    return false;
+  }
+}
+
+export function WorldCupTrophyThree({
+  className,
+  onInteract,
+  onInteractiveChange,
+}: {
+  className?: string;
+  onInteract?: () => void;
+  onInteractiveChange?: (interactive: boolean) => void;
+}) {
   const hostRef = React.useRef<HTMLDivElement>(null);
   const onInteractRef = React.useRef(onInteract);
+  const onInteractiveChangeRef = React.useRef(onInteractiveChange);
+  const [webglState, setWebglState] = React.useState<WebGLState>("checking");
 
   React.useEffect(() => {
     onInteractRef.current = onInteract;
   }, [onInteract]);
 
   React.useEffect(() => {
+    onInteractiveChangeRef.current = onInteractiveChange;
+  }, [onInteractiveChange]);
+
+  React.useEffect(() => {
+    const nextState = canCreateWebGLContext() ? "ready" : "fallback";
+    setWebglState(nextState);
+    onInteractiveChangeRef.current?.(nextState === "ready");
+  }, []);
+
+  React.useEffect(() => {
+    if (webglState !== "ready") return;
     const host = hostRef.current;
     if (!host) return;
 
@@ -23,7 +58,14 @@ export function WorldCupTrophyThree({ className, onInteract }: { className?: str
     camera.position.set(0, 0.25, 6.2);
     camera.lookAt(0, 0.15, 0);
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+    } catch {
+      setWebglState("fallback");
+      onInteractiveChangeRef.current?.(false);
+      return;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -31,6 +73,12 @@ export function WorldCupTrophyThree({ className, onInteract }: { className?: str
     renderer.domElement.setAttribute("aria-hidden", "true");
     renderer.domElement.className = "size-full";
     host.appendChild(renderer.domElement);
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      setWebglState("fallback");
+      onInteractiveChangeRef.current?.(false);
+    };
+    renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
 
     const trophy = new THREE.Group();
     let pitch = -0.04;
@@ -185,6 +233,7 @@ export function WorldCupTrophyThree({ className, onInteract }: { className?: str
       host.removeEventListener("pointercancel", finishPointerDrag);
       host.removeEventListener("keydown", handleKeyDown);
       observer.disconnect();
+      renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       scene.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return;
         object.geometry.dispose();
@@ -199,19 +248,28 @@ export function WorldCupTrophyThree({ className, onInteract }: { className?: str
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, []);
+  }, [webglState]);
 
   return (
     <div
       ref={hostRef}
-      role="group"
-      aria-roledescription="interactive 3D model"
-      aria-label="World Cup trophy. Drag to rotate, or use arrow keys. Press Home to reset."
-      tabIndex={0}
+      role={webglState === "ready" ? "group" : "img"}
+      aria-roledescription={webglState === "ready" ? "interactive 3D model" : undefined}
+      aria-label={webglState === "ready" ? "World Cup trophy. Drag to rotate, or use arrow keys. Press Home to reset." : "World Cup trophy"}
+      tabIndex={webglState === "ready" ? 0 : -1}
+      data-webgl-fallback={webglState === "fallback" ? "true" : undefined}
       className={cn(
-        "nodrag nopan nowheel pointer-events-auto cursor-grab touch-none select-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary data-[dragging=true]:cursor-grabbing",
+        "nodrag nopan nowheel pointer-events-auto touch-none select-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        webglState === "ready" && "cursor-grab data-[dragging=true]:cursor-grabbing",
+        webglState !== "ready" && "flex items-center justify-center",
         className,
       )}
-    />
+    >
+      {webglState === "fallback" && (
+        <span className="flex size-20 items-center justify-center rounded-full border border-primary/20 bg-primary/5 text-primary shadow-[0_0_32px_color-mix(in_oklab,var(--primary)_22%,transparent)]">
+          <TrophyIcon className="size-10" aria-hidden="true" />
+        </span>
+      )}
+    </div>
   );
 }

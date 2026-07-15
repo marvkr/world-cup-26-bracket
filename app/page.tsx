@@ -31,8 +31,10 @@ type Match = {
   id: string;
   number: number;
   date: string;
+  kickoff?: string;
+  matchTime?: string | null;
   venue: string;
-  status: "Final" | "Upcoming";
+  status: "Final" | "Live" | "Upcoming";
   teams: [Team | null, Team | null];
   scores: [number | null, number | null];
   winner?: string;
@@ -106,7 +108,8 @@ const match = (
   winner?: string,
   note?: string,
   status: Match["status"] = "Final",
-): Match => ({ id: `m${number}`, number, date, venue, status, teams: [first, second], scores, winner, note });
+  kickoff?: string,
+): Match => ({ id: `m${number}`, number, date, kickoff, venue, status, teams: [first, second], scores, winner, note });
 
 const roundOf32: Match[] = [
   match(74, "29 Jun", "Boston", teams.GER, teams.PAR, [1, 1], "PAR", "PSO 3–4"),
@@ -146,11 +149,11 @@ const quarterFinals: Match[] = [
 ];
 
 const semiFinals: Match[] = [
-  match(101, "14 Jul · 12:00 PT", "Dallas", teams.FRA, teams.ESP, [null, null], undefined, undefined, "Upcoming"),
-  match(102, "15 Jul · 12:00 PT", "Atlanta", teams.ENG, teams.ARG, [null, null], undefined, undefined, "Upcoming"),
+  match(101, "14 Jul", "Dallas", teams.FRA, teams.ESP, [0, 2], "ESP", undefined, "Final", "2026-07-14T19:00:00Z"),
+  match(102, "15 Jul · 12:00 PT", "Atlanta", teams.ENG, teams.ARG, [null, null], undefined, undefined, "Upcoming", "2026-07-15T19:00:00Z"),
 ];
 
-const finalMatch = match(104, "19 Jul · 12:00 PT", "New York/NJ", null, null, [null, null], undefined, undefined, "Upcoming");
+const finalMatch = match(104, "19 Jul · 12:00 PT", "New York/NJ", teams.ESP, null, [null, null], undefined, undefined, "Upcoming", "2026-07-19T19:00:00Z");
 const WORLD_CUP_26_EMBLEM = "https://digitalhub.fifa.com/transform/72a8ea8e-9019-49a4-8e79-8b2488cd9972/WC26_logo_brand_identity_black-bg?io=transform%3Afill%2Caspectratio%3A1x1%2Cwidth%3A300&quality=100";
 const stadiums: Record<string, Stadium> = {
   Atlanta: { name: "Mercedes-Benz Stadium", photo: "/stadiums/atlanta.jpg" },
@@ -169,19 +172,105 @@ const stadiums: Record<string, Stadium> = {
   Toronto: { name: "BMO Field", photo: "/stadiums/toronto.jpg" },
   Vancouver: { name: "BC Place", photo: "/stadiums/vancouver.jpg" },
 };
-const matchById = new Map([...roundOf32, ...roundOf16, ...quarterFinals].map((item) => [item.id, item]));
-const matchesForLayout = (ids: string[]) => ids.map((id) => matchById.get(id)!);
-
 // Keep every match subtree contiguous while placing France upper-left and
 // Norway upper-right. This avoids crossings when the radial order changes.
-const round32Layout = matchesForLayout([
+const ROUND32_LAYOUT_IDS = [
   "m83", "m84", "m81", "m82",
   "m74", "m77", "m73", "m75",
   "m76", "m78", "m79", "m80",
   "m86", "m88", "m85", "m87",
-]);
-const round16Layout = matchesForLayout(["m93", "m94", "m89", "m90", "m91", "m92", "m95", "m96"]);
-const quarterLayout = matchesForLayout(["m98", "m97", "m99", "m100"]);
+];
+const ROUND16_LAYOUT_IDS = ["m93", "m94", "m89", "m90", "m91", "m92", "m95", "m96"];
+const QUARTER_LAYOUT_IDS = ["m98", "m97", "m99", "m100"];
+const FALLBACK_MATCHES = [...roundOf32, ...roundOf16, ...quarterFinals, ...semiFinals, finalMatch];
+
+type LiveTeamRecord = { code: string; name: string; score: number | null };
+type LiveMatchRecord = {
+  away: LiveTeamRecord | null;
+  awayPenaltyScore: number | null;
+  home: LiveTeamRecord | null;
+  homePenaltyScore: number | null;
+  kickoff: string | null;
+  matchTime: string | null;
+  number: number;
+  resultType: number;
+  status: Match["status"];
+  venue: string | null;
+  winnerCode: string | null;
+};
+type LiveFeed = { matches: LiveMatchRecord[]; source: string; updatedAt: string };
+
+const dateParts = (date: Date, options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-GB", options).format(date);
+const formatMatchDate = (kickoff: string, status: Match["status"]) => {
+  const date = new Date(kickoff);
+  const day = dateParts(date, { day: "numeric", month: "short", timeZone: "America/Los_Angeles" });
+  if (status === "Final") return day;
+  const time = dateParts(date, { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Los_Angeles" });
+  return `${day} · ${time} PT`;
+};
+const liveTeam = (record: LiveTeamRecord | null, fallback: Team | null) => {
+  if (!record) return fallback;
+  return teams[record.code] ?? makeTeam(record.code, record.name, record.code.toLowerCase());
+};
+const mergeLiveMatch = (fallback: Match, live?: LiveMatchRecord): Match => {
+  if (!live) return fallback;
+  const first = liveTeam(live.home, fallback.teams[0]);
+  const second = liveTeam(live.away, fallback.teams[1]);
+  const penaltyNote = live.homePenaltyScore !== null && live.awayPenaltyScore !== null
+    ? `PSO ${live.homePenaltyScore}–${live.awayPenaltyScore}`
+    : live.resultType === 3
+      ? "AET"
+      : undefined;
+  return {
+    ...fallback,
+    date: live.kickoff ? formatMatchDate(live.kickoff, live.status) : fallback.date,
+    kickoff: live.kickoff ?? fallback.kickoff,
+    matchTime: live.matchTime,
+    note: penaltyNote,
+    scores: [live.home?.score ?? null, live.away?.score ?? null],
+    status: live.status,
+    teams: [first, second],
+    winner: live.winnerCode ?? undefined,
+  };
+};
+
+function useLiveFeed() {
+  const [feed, setFeed] = React.useState<LiveFeed | null>(null);
+
+  React.useEffect(() => {
+    let disposed = false;
+    let controller: AbortController | null = null;
+    const refresh = async () => {
+      controller?.abort();
+      controller = new AbortController();
+      try {
+        const response = await fetch("/api/world-cup", { cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error(`Live feed returned ${response.status}`);
+        const nextFeed = await response.json() as LiveFeed;
+        if (!disposed && nextFeed.matches.length > 0) setFeed(nextFeed);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    };
+
+    void refresh();
+    const interval = window.setInterval(refresh, 30_000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      disposed = true;
+      controller?.abort();
+      window.clearInterval(interval);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
+
+  return feed;
+}
 const CANVAS_SIZE = 1400;
 const CENTER = CANVAS_SIZE / 2;
 
@@ -389,14 +478,15 @@ function PendingFlowNode({ id, data }: NodeProps<PendingNode>) {
 function TrophyFlowNode() {
   const { zoom } = useViewport();
   const [showHint, setShowHint] = React.useState(true);
+  const [canRotate, setCanRotate] = React.useState(false);
   const hintInverseZoom = Math.min(2.75, Math.max(0.75, 1 / zoom));
   return (
     <div className="relative flex size-48 items-center justify-center">
       <Handle id="left" type="target" position={Position.Left} className="pointer-events-none opacity-0" />
       <Handle id="right" type="target" position={Position.Right} className="pointer-events-none opacity-0" />
       <div className="relative size-44">
-        <WorldCupTrophyThree className="size-full" onInteract={() => setShowHint(false)} />
-        {showHint && (
+        <WorldCupTrophyThree className="size-full" onInteract={() => setShowHint(false)} onInteractiveChange={setCanRotate} />
+        {showHint && canRotate && (
           <p
             className="pointer-events-none absolute left-1/2 top-full mt-2 flex items-center gap-1 whitespace-nowrap font-[family-name:var(--font-caveat)] text-[9px] font-medium leading-none text-muted-foreground"
             style={{
@@ -555,10 +645,12 @@ function makeTreeEdge(
 }
 
 function RadialBracket({
+  matches,
   selectedTeam,
   onSelect,
   onClear,
 }: {
+  matches: Match[];
   selectedTeam: string | null;
   onSelect: (code: string) => void;
   onClear: () => void;
@@ -567,6 +659,13 @@ function RadialBracket({
   const flowRef = React.useRef<ReactFlowInstance<TeamNode | PendingNode | TrophyNode, Edge<TreeEdgeData>> | null>(null);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [touchTooltipId, setTouchTooltipId] = React.useState<string | null>(null);
+  const matchById = React.useMemo(() => new Map(matches.map((item) => [item.id, item])), [matches]);
+  const matchesForLayout = React.useCallback((ids: string[]) => ids.map((id) => matchById.get(id)!), [matchById]);
+  const currentRoundOf32 = React.useMemo(() => matches.filter((item) => item.number >= 73 && item.number <= 88), [matches]);
+  const round32Layout = React.useMemo(() => matchesForLayout(ROUND32_LAYOUT_IDS), [matchesForLayout]);
+  const round16Layout = React.useMemo(() => matchesForLayout(ROUND16_LAYOUT_IDS), [matchesForLayout]);
+  const quarterLayout = React.useMemo(() => matchesForLayout(QUARTER_LAYOUT_IDS), [matchesForLayout]);
+  const currentSemiFinals = React.useMemo(() => [matchById.get("m101")!, matchById.get("m102")!], [matchById]);
 
   React.useEffect(() => {
     if (!isFullscreen) return;
@@ -624,8 +723,21 @@ function RadialBracket({
       item,
     ));
     const quarterWinners = quarterLayout.map((item, index) => teamNode(`win-${item.id}`, teams[item.winner!], 225, 135 + index * 90, selectedTeam, onSelect, false, false, item));
-    const pending = semiFinals.map((item): PendingNode => {
+    const semiFinalNodes = currentSemiFinals.map((item): PendingNode | TeamNode => {
       const angle = item.id === "m101" ? Math.PI : 0;
+      if (item.winner && teams[item.winner]) {
+        return teamNode(
+          `pending-${item.id}`,
+          teams[item.winner],
+          115,
+          angle * 180 / Math.PI,
+          selectedTeam,
+          onSelect,
+          false,
+          false,
+          item,
+        );
+      }
       const targetPosition = sideForAngle(angle);
       return {
         id: `pending-${item.id}`,
@@ -649,13 +761,13 @@ function RadialBracket({
       draggable: false,
       selectable: false,
     };
-    return [...outerNodes, ...round32Winners, ...round16Winners, ...quarterWinners, ...pending, trophy];
-  }, [onSelect, selectedTeam]);
+    return [...outerNodes, ...round32Winners, ...round16Winners, ...quarterWinners, ...semiFinalNodes, trophy];
+  }, [currentSemiFinals, onSelect, quarterLayout, round16Layout, round32Layout, selectedTeam]);
 
   const edges = React.useMemo<Edge<TreeEdgeData>[]>(() => {
-    const winnerByMatch = new Map([...roundOf32, ...roundOf16, ...quarterFinals].map((item) => [item.id, teams[item.winner!]]));
+    const winnerByMatch = new Map(matches.filter((item) => item.winner).map((item) => [item.id, teams[item.winner!]]));
     const result: Edge[] = [];
-    roundOf32.forEach((item) => item.teams.forEach((team) => {
+    currentRoundOf32.forEach((item) => item.teams.forEach((team) => {
       if (!team) return;
       result.push(makeTreeEdge(`leaf-${item.id}-${team.code}`, `win-${item.id}`, team, winnerByMatch.get(item.id), selectedTeam));
     }));
@@ -663,10 +775,10 @@ function RadialBracket({
       result.push(makeTreeEdge(`win-${source}`, `win-${target}`, winnerByMatch.get(source), winnerByMatch.get(target), selectedTeam));
     });
     progression.slice(24, 28).forEach(([source, target]) => {
-      result.push(makeTreeEdge(`win-${source}`, `pending-${target}`, winnerByMatch.get(source), undefined, selectedTeam));
+      result.push(makeTreeEdge(`win-${source}`, `pending-${target}`, winnerByMatch.get(source), winnerByMatch.get(target), selectedTeam));
     });
-    result.push(makeTreeEdge("pending-m101", "trophy", undefined, undefined, selectedTeam, ["FRA", "ESP"], "left"));
-    result.push(makeTreeEdge("pending-m102", "trophy", undefined, undefined, selectedTeam, ["ENG", "ARG"], "right"));
+    result.push(makeTreeEdge("pending-m101", "trophy", winnerByMatch.get("m101"), undefined, selectedTeam, currentSemiFinals[0].teams.flatMap((team) => team?.code ?? []), "left"));
+    result.push(makeTreeEdge("pending-m102", "trophy", winnerByMatch.get("m102"), undefined, selectedTeam, currentSemiFinals[1].teams.flatMap((team) => team?.code ?? []), "right"));
     const circles = new Map(nodes.map((node) => [node.id, circleForNode(node)]));
     return result.map((edge) => ({
       ...edge,
@@ -675,7 +787,7 @@ function RadialBracket({
         targetCircle: circles.get(edge.target)!,
       },
     }));
-  }, [nodes, selectedTeam]);
+  }, [currentRoundOf32, currentSemiFinals, matches, nodes, selectedTeam]);
 
   const clearCanvasState = React.useCallback(() => {
     setTouchTooltipId(null);
@@ -690,7 +802,7 @@ function RadialBracket({
         data-fullscreen={isFullscreen ? "true" : undefined}
         className={cn(
           "radial-scroll size-full overflow-hidden bg-background",
-          isFullscreen && "fixed inset-0 z-50",
+          isFullscreen && "fixed inset-y-0 left-0 z-50 !h-dvh !w-screen",
         )}
         aria-label="Complete World Cup knockout bracket. Click empty canvas to clear the selected route."
       >
@@ -783,9 +895,46 @@ function RadialBracket({
 
 export default function Page() {
   const [selectedTeam, setSelectedTeam] = React.useState<string | null>(null);
+  const liveFeed = useLiveFeed();
+  const matches = React.useMemo(() => {
+    const liveByNumber = new Map(liveFeed?.matches.map((item) => [item.number, item]) ?? []);
+    return FALLBACK_MATCHES.map((item) => mergeLiveMatch(item, liveByNumber.get(item.number)));
+  }, [liveFeed]);
+  const featuredMatch = React.useMemo(() => {
+    const candidates = matches.filter((item) => item.number >= 101);
+    const today = new Intl.DateTimeFormat("en-CA", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date());
+    const dateKey = (item: Match) => item.kickoff
+      ? new Intl.DateTimeFormat("en-CA", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(item.kickoff))
+      : "";
+    return candidates.find((item) => item.status === "Live")
+      ?? candidates.find((item) => dateKey(item) === today)
+      ?? candidates
+        .filter((item) => item.status === "Upcoming" && item.kickoff)
+        .sort((a, b) => new Date(a.kickoff!).getTime() - new Date(b.kickoff!).getTime())[0]
+      ?? candidates[candidates.length - 1];
+  }, [matches]);
+  const featuredTime = featuredMatch.kickoff
+    ? dateParts(new Date(featuredMatch.kickoff), { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Los_Angeles" })
+    : "";
+  const featuredIsToday = featuredMatch.kickoff
+    ? new Date(featuredMatch.kickoff).toDateString() === new Date().toDateString()
+    : false;
+  const featuredDay = featuredMatch.kickoff
+    ? dateParts(new Date(featuredMatch.kickoff), { day: "numeric", month: "short", timeZone: "America/Los_Angeles" }).toUpperCase()
+    : "NEXT";
+  const featuredTeams = `${featuredMatch.teams[0]?.code ?? "TBD"}   VS   ${featuredMatch.teams[1]?.code ?? "TBD"}`;
+  const featuredTiming = featuredMatch.status === "Live"
+    ? `LIVE ${featuredMatch.matchTime ?? ""}`.trim()
+    : featuredIsToday
+      ? `TODAY ${featuredTime} PT`
+      : `${featuredDay} ${featuredTime.replace(":00", "")} PT`;
+  const featuredWhen = featuredMatch.status === "Live"
+    ? "live"
+    : `${featuredIsToday ? "today" : featuredDay} at ${featuredTime} Pacific Time`;
+  const featuredLabel = `${featuredMatch.teams[0]?.name ?? "To be decided"} versus ${featuredMatch.teams[1]?.name ?? "To be decided"}, ${featuredWhen} in ${featuredMatch.venue}`;
 
   return (
-    <main className="isolate flex h-svh flex-col overflow-hidden bg-background">
+    <main className="isolate flex h-svh flex-col overflow-hidden bg-background" data-live-source={liveFeed?.source}>
       <header className="relative z-30 shrink-0 border-b border-border bg-background">
         <div className="mx-auto flex max-w-[1540px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
@@ -805,18 +954,18 @@ export default function Page() {
       <div className="flex min-h-0 flex-1 flex-col pt-6 sm:px-6 sm:pt-8 lg:px-8">
         <section className="relative z-20 grid shrink-0 gap-8 border-b border-border bg-background px-4 pb-10 sm:px-0 lg:grid-cols-[1fr_420px] lg:items-center">
           <h1 className="max-w-3xl text-4xl font-semibold leading-[1.05] tracking-[-0.035em] text-balance sm:text-6xl">Road to the final</h1>
-          <div className="flex justify-start lg:justify-end" role="img" aria-label="France versus Spain, today at 12:00 Pacific Time in Dallas">
+          <div className="flex justify-start lg:justify-end" role="img" aria-label={featuredLabel}>
             <div className="sm:hidden" aria-hidden="true">
-              <FlipBoard rows={["FRA   VS   ESP", "TODAY 12:00 PT"]} columns={14} tileSize={16} gap={2} className="p-2" />
+              <FlipBoard rows={[featuredTeams, featuredTiming]} columns={14} tileSize={16} gap={2} className="p-2" />
             </div>
             <div className="hidden sm:block" aria-hidden="true">
-              <FlipBoard rows={["FRA   VS   ESP", "TODAY 12:00 PT"]} columns={14} tileSize={25} gap={3} className="p-3" />
+              <FlipBoard rows={[featuredTeams, featuredTiming]} columns={14} tileSize={25} gap={3} className="p-3" />
             </div>
           </div>
         </section>
 
         <section className="relative z-0 min-h-0 flex-1 overflow-hidden bg-background pt-6 sm:pt-8">
-          <RadialBracket selectedTeam={selectedTeam} onSelect={setSelectedTeam} onClear={() => setSelectedTeam(null)} />
+          <RadialBracket matches={matches} selectedTeam={selectedTeam} onSelect={setSelectedTeam} onClear={() => setSelectedTeam(null)} />
         </section>
       </div>
     </main>
